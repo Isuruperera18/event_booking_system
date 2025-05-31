@@ -6,13 +6,22 @@ import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { EventDetailsComponent } from './features/events/event-detail/event-detail.component';
 import { EventFormComponent } from './features/events/event-form/event-form.component';
+import { MyBookingsListComponent } from './features/booking/my-bookings-list/my-bookings-list.component';
+import { BookingDetailComponent } from './features/booking/booking-detail/booking-detail.component';
 
 export const routes: Routes = [
     { path: 'auth/login', component: LoginComponent },
     { path: 'auth/register', component: RegisterComponent },
-    // { path: 'events', component: EventListComponent, },
-    // { path: 'event/:id', component: EventDetailsComponent, },
-    //   { path: '**', component: NotFoundComponent }
+    {
+        path: 'bookings',
+        children: [
+            {
+                path: 'my',
+                component: MyBookingsListComponent, canActivate: [AuthGuard],
+            },
+            { path: ':id', component: BookingDetailComponent, canActivate: [AuthGuard] },
+        ]
+    },
     { path: '', redirectTo: '/events', pathMatch: 'full' },
     {
         path: 'events',

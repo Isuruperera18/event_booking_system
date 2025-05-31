@@ -8,7 +8,7 @@
 
   <ng-container *ngIf="authService.isLoggedIn$ | async as isLoggedIn">
     <!-- <a *ngIf="isLoggedIn" mat-button routerLink="/profile" routerLinkActive="active">Profile</a> -->
-    <a *ngIf="isLoggedIn" mat-button routerLink="/mybookings" routerLinkActive="active">My Bookings</a>
+    <a *ngIf="isLoggedIn" mat-button routerLink="/bookings/my" routerLinkActive="active">My Bookings</a>
     <a *ngIf="isLoggedIn && (userRole === 'Organizer' || userRole === 'Admin')" 
        mat-button routerLink="/events/new" routerLinkActive="active">Create Event</a>
     <button *ngIf="isLoggedIn" mat-button (click)="logout()">Logout</button>

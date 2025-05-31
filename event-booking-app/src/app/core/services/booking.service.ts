@@ -10,8 +10,8 @@ export class BookingService {
   constructor(private http: HttpClient) {}
 
   // Create a booking
-  createBooking(eventId: string): Observable<{ success: boolean; data: Booking }> {
-    return this.http.post<{ success: boolean; data: Booking }>(`${this.apiUrl}`, { eventId });
+  createBooking(bookingData: Booking): Observable<{ success: boolean; data: Booking }> {
+    return this.http.post<{ success: boolean; data: Booking }>(`${this.apiUrl}`, bookingData);
   }
 
   // Get current user's bookings

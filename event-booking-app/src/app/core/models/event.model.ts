@@ -32,4 +32,8 @@ export interface AppEvent {
   status?: 'Scheduled' | 'Cancelled' | 'Postponed' | 'Completed';
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  image?:any;
+  availableTickets?: number;
+  bookedCount? : number;
+  bookingId?: string;
 }

@@ -1,7 +1,7 @@
 // routes/userRoutes.js
 const express = require('express');
 const { getUserProfile } = require('../controllers/userController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 

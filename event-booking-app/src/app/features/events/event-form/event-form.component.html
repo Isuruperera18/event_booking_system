@@ -2,7 +2,7 @@
   <mat-card>
     <mat-card-title>Create New Event</mat-card-title>
     <mat-card-content>
-      <form [formGroup]="eventForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
         <!-- Title -->
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Title</mat-label>
@@ -38,7 +38,8 @@
         <!-- Image Upload -->
         <div class="full-width">
           <label for="imageInput">Select Image</label>
-          <input type="file" formControlName="imageURL" id="imageInput" accept="image/*" />
+          <input type="file" id="imageFile" (change)="onFileSelected($event)" accept="image/png, image/jpeg, image/gif"
+            class="form-control-file">
         </div>
 
         <!-- Image Preview -->

@@ -14,7 +14,7 @@ export class TokenStorageService {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
     // Consider using sessionStorage if you want token to clear on browser close
-    // window.sessionStorage.clear();
+    window.sessionStorage.clear();
   }
 
   public saveToken(token: string): void {

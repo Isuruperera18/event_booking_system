@@ -1,0 +1,34 @@
+<div class="container mt-4">
+<a mat-button color="primary" class="mb-4" routerLink="/bookings/my">← Back to Events</a>
+  <div *ngIf="loading" class="text-center my-4">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && booking" class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h3>Booking Details</h3>
+    </div>
+    <div class="card-body">
+
+      <h1>Event name: {{ booking.event.title }}</h1>
+      <p><strong>Date:</strong> {{ booking.event.date | date:'fullDate' }}</p>
+      <p><strong>Location:</strong> {{ booking.event.location || 'TBA' }}</p>
+      <p><strong>Description:</strong></p>
+      <p>{{ booking.event.description || 'No description available.' }}</p>
+
+      <hr>
+
+      <p><strong>Tickets Booked:</strong> {{ booking.tickets }}</p>
+      <p><strong>Booking ID:</strong> {{ booking._id }}</p>
+
+      <hr>
+
+      <p><strong>Organizer:</strong> {{ booking.event.organizer?.name || 'N/A' }}</p>
+      <p><strong>Organizer Email:</strong> {{ booking.event.organizer?.email || 'N/A' }}</p>
+    </div>
+  </div>
+</div>

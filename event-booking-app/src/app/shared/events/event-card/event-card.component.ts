@@ -10,6 +10,10 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { BookTicketDialogComponent } from '../../../features/events/book-ticket-dialog/book-ticket-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenStorageService } from '../../../core/services/token-storage.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { BookingService } from '../../../core/services/booking.service';
+import { EventService } from '../../../core/services/event.service';
+import { Booking } from '../../../core/models/booking.model';
 
 @Component({
   selector: 'app-event-card',
@@ -23,38 +27,36 @@ import { TokenStorageService } from '../../../core/services/token-storage.servic
   ],
   templateUrl: './event-card.component.html',
   styleUrls: ['./event-card.component.scss'],
-  changeDetection:ChangeDetectionStrategy.OnPush
 })
-export class EventCardComponent implements OnInit, OnChanges {
+export class EventCardComponent implements OnInit {
   @Input() event!: AppEvent;
   @Output() book = new EventEmitter<void>();
   @Output() cardClick = new EventEmitter<void>();
-
+  loading = true;
   safeImageURL!: SafeUrl;
   currentUserId = '';
 
-  constructor(private sanitizer: DomSanitizer,
+  constructor(
+    private sanitizer: DomSanitizer,
     private dialog: MatDialog,
-    private tokenStorageService: TokenStorageService
+    private tokenStorageService: TokenStorageService,
+    private snackBar: MatSnackBar,
+    private bookingService: BookingService,
+    private eventService: EventService,
   ) { }
 
-ngOnChanges(changes: SimpleChanges): void {
-  this.currentUserId = this.tokenStorageService.getUser()?._id || '';
-  console.log('CurrentUserId:', this.currentUserId);
+  ngOnInit(): void {
+    const user = this.tokenStorageService.getUser();
 
-  if (changes['event'] && this.event?.imageURL) {
-    this.safeImageURL = this.sanitizer.bypassSecurityTrustUrl(this.event.imageURL);
-  } else {
-    this.safeImageURL = this.sanitizer.bypassSecurityTrustUrl('assets/default.jpg');
-  }
-}
-ngOnInit(): void {
-  this.currentUserId = this.tokenStorageService.getUser()?._id || '';
-}
+    if (user && user.id) {
+      this.currentUserId = user.id;
+    }
 
-
-  onBook() {
-    this.book.emit();
+    if (this.event?.imageURL) {
+      this.safeImageURL = this.sanitizer.bypassSecurityTrustUrl(this.event.imageURL);
+    } else {
+      this.safeImageURL = this.sanitizer.bypassSecurityTrustUrl('assets/default.jpg');
+    }
   }
 
   onCardClick() {
@@ -70,20 +72,67 @@ ngOnInit(): void {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(`User booked ${result} tickets.`);
+        this.onBookEvent(result)
         // Optional: Update available ticket count, show confirmation, etc.
-        this.cardClick.emit();
+        this.book.emit();
       }
     });
   }
 
   // In your component.ts
-isUserAttending(event: AppEvent): boolean {
-  if (!event.attendees) return false;
-  return event.attendees.includes(this.currentUserId);
-}
-
+  isUserAttending(event: AppEvent): boolean {
+    if (!event.attendees || !this.currentUserId) return false;
+    return event.attendees.includes(this.currentUserId);
+  }
 
   cancelBooking(event: AppEvent) {
+    this.bookingService.cancelBooking(event.bookingId!).subscribe({
+      next: () => {
+        this.snackBar.open('Booking canceled successfully!', 'Close', { duration: 3000 });
+        // You might want to emit an event or update the event data here
+        // this.getEvent()
+        // this.cardClick.emit();  // for example, to refresh parent component data
 
+      },
+      error: (err) => {
+        console.error('Error canceling booking:', err);
+        this.snackBar.open('Failed to cancel booking. Please try again.', 'Close', { duration: 3000 });
+      }
+    });
   }
+
+  onBookEvent(tickets: number) {
+    const booking: Booking = {
+      eventId: this.event._id!,
+      tickets,
+    }
+    console.log(`Booked ${booking} tickets.`);
+    this.bookingService.createBooking(booking).subscribe({
+      next: (createdEvent) => {
+        this.loading = false;
+        this.snackBar.open('Event booked successfully!', 'Close', { duration: 3000 });
+        this.book.emit();
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Error booking event:', err);
+        this.snackBar.open('Failed to book event. Please try again.', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  //   getEvent() {
+  //   this.eventService.getEventById(this.event._id!).subscribe({
+  //     next: (currentEvent) => {
+  //               this.isUserAttending(currentEvent?.data)
+  //       this.snackBar.open('Booking get successfully!', 'Close', { duration: 3000 });
+  //       // You might want to emit an event or update the event data here
+  //       // this.cardClick.emit();  // for example, to refresh parent component data
+  //     },
+  //     error: (err) => {
+  //       console.error('Error canceling booking:', err);
+  //       this.snackBar.open('Failed to cancel booking. Please try again.', 'Close', { duration: 3000 });
+  //     }
+  //   });
+  // }
 }

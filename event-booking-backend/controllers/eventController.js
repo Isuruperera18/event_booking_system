@@ -1,6 +1,7 @@
 // controllers/eventController.js
+const mongoose = require('mongoose');
 const Event = require("../models/Event");
-const User = require("../models/User"); // If needed for validation or population
+const Booking = require('../models/Booking');
 const axios = require("axios");
 const multer = require("multer");
 const fs = require("fs");
@@ -19,39 +20,45 @@ exports.uploadEventImage = upload.single("image");
 // @route   POST /api/v1/events
 // @access  Private (Organizer or Admin)
 exports.createEvent = async (req, res, next) => {
-  try {
-    if (req.file) {
-      // Read image file from temp folder and convert to base64
-      const imagePath = path.join(__dirname, "..", req.file.path);
-      const imageBase64 = fs.readFileSync(imagePath, { encoding: "base64" });
+    try {
+        // 1. Upload to ImgBB
+        if(req.file){
+        const imageBase64 = req.file.buffer.toString('base64');
 
-      // Upload to Imgbb
-      const imgbbResponse = await axios.post(
-        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-        {
-          image: imageBase64,
+        // ImgBB expects data as 'application/x-www-form-urlencoded'
+        // We can use URLSearchParams for this
+        const formData = new URLSearchParams();
+        formData.append('image', imageBase64);
+        // formData.append('name', req.file.originalname); // Optional: set a name for the image on ImgBB
+
+        console.log('Uploading to ImgBB...');
+        const imgbbResponse = await axios.post(
+            `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        if (!imgbbResponse.data || !imgbbResponse.data.success) {
+            console.error('ImgBB Upload Error:', imgbbResponse.data);
+            return res.status(500).json({ message: 'Failed to upload image to ImgBB', error: imgbbResponse.data });
         }
-      );
 
-      // Delete temp file after upload
-      fs.unlinkSync(imagePath);
+        const imgbbData = imgbbResponse.data.data;
+        const imageUrl = imgbbData.url; // Direct link to the image
+        console.log('ImgBB Upload successful:', imageUrl);
 
-      if (
-        !imgbbResponse.data ||
-        !imgbbResponse.data.data ||
-        !imgbbResponse.data.data.url
-      ) {
-        return res
-          .status(500)
-          .json({ success: false, message: "Failed to upload image to Imgbb" });
+        req.body.imageURL = imageUrl
       }
+      else{
 
-      // Add organizer and image URL to event data
-      req.body.imageURL = imgbbResponse.data.data.url; // URL from Imgbb response
-    }
-    req.body.imageURL = "https://i.ibb.co/Q7p33kKv/default.jpg";
+        req.body.imageURL = "https://i.ibb.co/Q7p33kKv/default.jpg";
+      }
     req.body.organizer = req.user.id;
-    // Create event with other data (price, currency, seats, etc.) in req.body
+
     const event = await Event.create(req.body);
 
     res.status(201).json({ success: true, data: event });
@@ -72,72 +79,106 @@ exports.createEvent = async (req, res, next) => {
   }
 };
 
-// @desc    Get all events (publicly accessible, can be filtered later)
-// @route   GET /api/v1/events
-// @access  Public
 exports.getEvents = async (req, res, next) => {
   try {
-    // Basic search and filter can be added here later (Phase 5)
-    const events = await Event.find().populate("organizer", "name email"); // Populate organizer details
-    res.status(200).json({ success: true, count: events.length, data: events });
+    const events = await Event.find().populate("organizer", "name email");
+
+    const userId = req.user?.id || null;
+
+    const eventsWithAvailability = await Promise.all(
+      events.map(async (event) => {
+        // Calculate total booked tickets
+        const bookingAgg = await Booking.aggregate([
+          { $match: { event: new mongoose.Types.ObjectId(event._id) } },
+          { $group: { _id: null, totalTickets: { $sum: '$tickets' } } }
+        ]);
+        const bookedCount = bookingAgg[0]?.totalTickets || 0;
+        const availableTickets = event.capacity > 0 ? event.capacity - bookedCount : Infinity;
+
+        let eventData = {
+          ...event.toObject(),
+          bookedCount,
+          availableTickets: availableTickets <= 0 ? 0 : availableTickets,
+        };
+
+        // If logged in, fetch booking
+        if (userId) {
+          console.log(`Checking booking for user ${userId} and event ${event._id}`);
+          const userBooking = await Booking.findOne({
+            event: event._id,
+            user: userId
+          }).select('_id');
+
+          console.log('Found booking:', userBooking);
+          eventData.bookingId = userBooking ? userBooking._id : null;
+        }
+
+        return eventData;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      count: eventsWithAvailability.length,
+      data: eventsWithAvailability
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// @desc    Get single event
-// @route   GET /api/v1/events/:id
-// @access  Public
+
 exports.getEvent = async (req, res, next) => {
   try {
-    const event = await Event.findById(req.params.id).populate(
-      "organizer",
-      "name email"
-    );
+    const event = await Event.findById(req.params.id).populate("organizer", "name email");
     if (!event) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`
+      });
     }
-    res.status(200).json({ success: true, data: event });
+
+    const bookingAgg = await Booking.aggregate([
+      { $match: { eventId: new mongoose.Types.ObjectId(event._id) } },
+      { $group: { _id: null, totalTickets: { $sum: '$tickets' } } }
+    ]);
+    const bookedCount = bookingAgg[0]?.totalTickets || 0;
+    const availableTickets = event.capacity > 0 ? event.capacity - bookedCount : Infinity;
+
+    const eventData = {
+      ...event.toObject(),
+      availableTickets: availableTickets < 0 ? 0 : availableTickets
+    };
+
+    // Add bookingId for current user if logged in
+    const userId = req.user?.id || null;
+    if (userId) {
+      const userBooking = await Booking.findOne({
+        eventId: event._id,
+        userId: userId
+      }).select('_id');
+
+      eventData.bookingId = userBooking ? userBooking._id : null;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: eventData
+    });
   } catch (err) {
     console.error(err);
-    // Handle CastError if ID is not a valid ObjectId
     if (err.name === "CastError") {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`
+      });
     }
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// @desc    Create new event
-// @route   POST /api/v1/events
-// @access  Private (Organizer or Admin)
-// exports.createEvent = async (req, res, next) => {
-//     try {
-//         // Add logged-in user as the organizer
-//         req.body.organizer = req.user.id;
 
-//         const event = await Event.create(req.body);
-//         res.status(201).json({ success: true, data: event });
-//     } catch (err) {
-//         console.error(err);
-//         if (err.name === 'ValidationError') {
-//             const messages = Object.values(err.errors).map(val => val.message);
-//             return res.status(400).json({ success: false, message: messages });
-//         }
-//         res.status(500).json({ success: false, message: 'Server Error' });
-//     }
-// };
 
 // @desc    Update event
 // @route   PUT /api/v1/events/:id

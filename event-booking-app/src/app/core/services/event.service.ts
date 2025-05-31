@@ -18,7 +18,7 @@ export class EventService {
     return this.http.get<{ success: boolean, data: AppEvent }>(`${this.apiUrl}/${id}`);
   }
 
-  createEvent(eventData: AppEvent): Observable<{ success: boolean, data: AppEvent }> {
+  createEvent(eventData: FormData): Observable<{ success: boolean, data: AppEvent }> {
     return this.http.post<{ success: boolean, data: AppEvent }>(this.apiUrl, eventData);
   }
 

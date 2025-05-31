@@ -33,9 +33,13 @@ export class EventListComponent implements OnInit {
   constructor(private eventService: EventService,
     private router: Router,
     private snackBar: MatSnackBar,
-  private bookingService: BookingService) { }
+    private bookingService: BookingService) { }
 
   ngOnInit(): void {
+    this.getAllEvents()
+  }
+
+  getAllEvents() {
     this.eventService.getEvents().subscribe({
       next: (res) => {
         this.events = res.data;
@@ -51,18 +55,18 @@ export class EventListComponent implements OnInit {
     this.router.navigate(['/events', id]);
   }
 
-  onBookEvent(eventId: string) {
+  // onBookEvent(eventId: string) {
 
-    this.bookingService.createBooking(eventId).subscribe({
-      next: (createdEvent) => {
-        this.loading = false;
-        this.snackBar.open('Event booked successfully!', 'Close', { duration: 3000 });
-      },
-      error: (err) => {
-        this.loading = false;
-        console.error('Error booking event:', err);
-        this.snackBar.open('Failed to book event. Please try again.', 'Close', { duration: 3000 });
-      }
-    });
-  }
+  //   this.bookingService.createBooking(eventId).subscribe({
+  //     next: (createdEvent) => {
+  //       this.loading = false;
+  //       this.snackBar.open('Event booked successfully!', 'Close', { duration: 3000 });
+  //     },
+  //     error: (err) => {
+  //       this.loading = false;
+  //       console.error('Error booking event:', err);
+  //       this.snackBar.open('Failed to book event. Please try again.', 'Close', { duration: 3000 });
+  //     }
+  //   });
+  // }
 }

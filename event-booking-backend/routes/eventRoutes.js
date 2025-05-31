@@ -5,15 +5,15 @@ const {
     getEvent,
     createEvent,
     updateEvent,
-    deleteEvent
+    deleteEvent,
 } = require('../controllers/eventController');
-const { protect, authorize } = require('../middleware/authMiddleware');
-
+const { protect, optionalProtect, authorize } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 const router = express.Router();
 
 router.route('/')
-    .get(getEvents) // Public
-    .post(protect, authorize('Organizer', 'Admin'), createEvent); // Only Organizers or Admins can create
+    .get(optionalProtect, getEvents) // Public
+    .post(protect, authorize('Organizer', 'Admin'),upload.single('imageFile'), createEvent); // Only Organizers or Admins can create
 
 router.route('/:id')
     .get(getEvent) // Public

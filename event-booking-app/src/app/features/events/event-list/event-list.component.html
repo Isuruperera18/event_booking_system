@@ -17,8 +17,8 @@
       <app-event-card
         [event]="event"
         (cardClick)="goToDetails(event._id!)"
-        (book)="onBookEvent(event._id!)"
-      ></app-event-card>
+        (book)="getAllEvents()"
+        ></app-event-card>
     </div>
   </div>
 </div>

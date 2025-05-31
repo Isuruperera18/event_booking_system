@@ -9,15 +9,42 @@ export class AuthInterceptor implements HttpInterceptor {
     console.log('AuthInterceptor created');
   }
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = this.tokenStorage.getToken();
+  // intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  //   const token = this.tokenStorage.getToken();
 
-    if (token) {
-      const cloned = req.clone({
-        headers: req.headers.set('Authorization', `Bearer ${token}`)
+  //   if (token) {
+  //     const cloned = req.clone({
+  //       headers: req.headers.set('Authorization', `Bearer ${token}`)
+  //     });
+  //     return next.handle(cloned);
+  //   }
+  //   return next.handle(req);
+  // }
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  const token = this.tokenStorage.getToken();
+
+  let clonedReq = req;
+
+  if (token) {
+    // Don't manually set Content-Type if body is FormData
+    if (!(req.body instanceof FormData)) {
+      clonedReq = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      return next.handle(cloned);
+    } else {
+      clonedReq = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
     }
-    return next.handle(req);
   }
+
+  return next.handle(clonedReq);
+}
+
 }

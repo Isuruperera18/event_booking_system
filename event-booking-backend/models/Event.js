@@ -80,13 +80,14 @@ const EventSchema = new mongoose.Schema({
     },
     imageURL: {
         type: String,
-        // validate: {
-        //     validator: function(v) {
-        //         if (!v) return true; // allow empty
-        //         return /^https?:\/\/.+\.(jpg|jpeg|png|webp|avif|gif|svg)$/.test(v);
-        //     },
-        //     message: props => `${props.value} is not a valid image URL!`
-        // }
+        required: false,
+        validate: {
+            validator: function(v) {
+                if (!v) return true; // allow empty
+                return /^https?:\/\/.+\.(jpg|jpeg|png|webp|avif|gif|svg)$/.test(v);
+            },
+            message: props => `${props.value} is not a valid image URL!`
+        }
     },
     organizer: {
         type: mongoose.Schema.Types.ObjectId,
@@ -137,7 +138,7 @@ const EventSchema = new mongoose.Schema({
     },
     updatedAt: {
         type: Date
-    }
+    },
 });
 
 // Middleware to update `updatedAt` on every save
