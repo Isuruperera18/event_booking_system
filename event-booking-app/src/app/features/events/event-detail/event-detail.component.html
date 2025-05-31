@@ -1,0 +1,85 @@
+<!-- src/app/event-details/event-details.component.html
+<div *ngIf="loading" class="loading-spinner">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div *ngIf="!loading && !event">
+  Event not found.
+</div>
+
+<mat-card *ngIf="event" class="event-details-card">
+  <mat-card-title>{{ event.title }}</mat-card-title>
+  <mat-card-subtitle>
+    {{ event.date | date:'fullDate' }} at {{ event.time }}
+  </mat-card-subtitle>
+  <mat-card-content>
+    <p>{{ event.description }}</p>
+    <p><strong>Location:</strong> {{ event.location }}</p>
+    <p><strong>Organizer:</strong> {{ event.createdAt }}</p>
+  </mat-card-content>
+</mat-card> -->
+
+<div class="container mat-typography">
+<a mat-button color="primary" class="mb-4" routerLink="/events">← Back to Events</a>
+
+  <!-- Event Image -->
+  <mat-card class="event-image-card">
+    <img mat-card-image [src]="event?.imageURL" alt="Event Banner">
+  </mat-card>
+
+  <div class="content-grid">
+    <!-- Left: Event Info -->
+    <div class="left-content">
+      <div class="tags">
+        <mat-chip color="primary" selected>{{event?.category}}</mat-chip>
+        <mat-chip color="accent" selected>{{event?.status}}</mat-chip>
+      </div>
+
+      <h1 class="mat-headline">{{event?.title}}</h1>
+      <p class="mat-body-1 mb-4">
+        {{event?.description}}
+      </p>
+
+      <mat-card class="event-details-card">
+        <mat-card-title>Event Details</mat-card-title>
+        <mat-card-content>
+          <div class="details-grid">
+            <div>
+              <mat-icon>event</mat-icon>
+              <span>Date: {{event?.date | date}}</span>
+            </div>
+            <div>
+              <mat-icon>schedule</mat-icon>
+              <span>Time: {{event?.time}}</span>
+            </div>
+            <div>
+              <mat-icon>place</mat-icon>
+              <span>Location: {{event?.location}}</span>
+            </div>
+            <div>
+              <mat-icon>groups</mat-icon>
+              <span>Capacity: {{event?.capacity}} people</span>
+            </div>
+          </div>
+        </mat-card-content>
+    </mat-card>
+    <h3 class="p-2">Organized by {{event?.organizer?.name}}</h3>
+    </div>
+
+    <!-- Right: Booking Section -->
+    <div class="booking-card">
+      <mat-card>
+        <mat-card-title class="p-2">Book Your Tickets</mat-card-title>
+        <mat-card-content>
+          <div class="price">
+            <span class="amount">{{ event?.price || 0 }}</span> <small>per ticket</small>
+          </div>
+          <p class="p-2">Available tickets: <strong>{{event?.capacity}}</strong></p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-flat-button color="primary" class="full-width" (click)="openBookingDialog()">Book Now</button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>

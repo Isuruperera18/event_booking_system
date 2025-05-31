@@ -1,0 +1,51 @@
+<mat-card class="example-card" appearance="outlined" (click)="onCardClick()">
+    <img mat-card-image [src]="event.imageURL" alt="Photo of event">
+    <mat-card-content>
+        <h3 class="title">
+            {{ event.title | slice: 0: 120 }}{{ event.description.length > 120 ? '...' : '' }}
+        </h3>
+        <p class="description">
+            {{ event.description.length > 100 ? (event.description | slice:0:100) + '...' : event.description }}
+        </p>
+
+        <div class="info">
+            <mat-icon>event</mat-icon>
+            <span>{{ event.date | date: 'mediumDate' }} at {{ event.time }}</span>
+        </div>
+
+        <div class="info" *ngIf="event.isVirtual; else locationBlock">
+            <mat-icon>language</mat-icon>
+            <span>Online Event</span>
+        </div>
+        <ng-template #locationBlock>
+            <div class="info">
+                <mat-icon>location_on</mat-icon>
+                <span>{{ event.location }}</span>
+            </div>
+        </ng-template>
+
+        <div class="info" *ngIf="event.capacity">
+            <mat-icon>group</mat-icon>
+            <span>{{ event.attendees?.length || 0 }} / {{ event.capacity }} attending</span>
+        </div>
+
+        <div class="info">
+            <mat-icon>attach_money</mat-icon>
+            <span>{{ event.price || 0 }}</span>
+        </div>
+    </mat-card-content>
+    <mat-card-actions class="action-buttons">
+        <button *ngIf="!isUserAttending(event)" mat-raised-button color="primary"
+            (click)="openBookingDialog(event); $event.stopPropagation()">
+            Book Now
+        </button>
+
+        <button *ngIf="isUserAttending(event)" mat-raised-button color="warn"
+            (click)="cancelBooking(event); $event.stopPropagation()">
+            Cancel Booking
+        </button>
+
+    </mat-card-actions>
+
+
+</mat-card>

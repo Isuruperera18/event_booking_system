@@ -1,0 +1,21 @@
+<mat-toolbar color="primary" >
+  <span class="app-title" routerLink="/">Event Booking</span>
+
+  <!-- Remove the spacer so all links stay on left -->
+  <!-- <span class="spacer"></span> -->
+
+  <a mat-button routerLink="/events" routerLinkActive="active">Events</a>
+
+  <ng-container *ngIf="authService.isLoggedIn$ | async as isLoggedIn">
+    <!-- <a *ngIf="isLoggedIn" mat-button routerLink="/profile" routerLinkActive="active">Profile</a> -->
+    <a *ngIf="isLoggedIn" mat-button routerLink="/mybookings" routerLinkActive="active">My Bookings</a>
+    <a *ngIf="isLoggedIn && (userRole === 'Organizer' || userRole === 'Admin')" 
+       mat-button routerLink="/events/new" routerLinkActive="active">Create Event</a>
+    <button *ngIf="isLoggedIn" mat-button (click)="logout()">Logout</button>
+  </ng-container>
+
+  <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+    <a mat-button routerLink="/auth/login" routerLinkActive="active">Login</a>
+    <a mat-button routerLink="/auth/register" routerLinkActive="active">Register</a>
+  </ng-container>
+</mat-toolbar>

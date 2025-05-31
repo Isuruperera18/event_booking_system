@@ -1,0 +1,13 @@
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+
+.event-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 0fr));
+  gap: 20px;
+  padding: 20px;
+}

@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>Book Your Tickets</h2>
+
+<mat-dialog-content>
+  <h3 class="mb-0">{{ data.event.title }}</h3>
+
+  <p class="d-flex align-items-center mb-1 m-0">
+    <mat-icon inline class="me-2">location_on</mat-icon>
+    {{ data.event.location }}
+  </p>
+
+  <p class="d-flex align-items-center mb-3 m-0">
+    <mat-icon inline class="me-2">event</mat-icon>
+    {{ data.event.date | date: 'mediumDate' }} at {{ data.event.time }}
+  </p>
+
+  <p class="mb-3 m-0">
+    Available tickets: <strong>
+      {{ data.event.capacity ? (data.event.capacity - (data.event.attendees?.length || 0)) : 'N/A' }}
+    </strong>
+  </p>
+
+  <mat-form-field appearance="fill" class="w-100">
+    <mat-label>Number of Tickets</mat-label>
+    <input matInput type="number" min="1" [max]="10" [(ngModel)]="ticketCount">
+  </mat-form-field>
+
+  <!-- Price Summary -->
+<div class="mt-3">
+  <div class="d-flex justify-content-between mb-2">
+    <strong>Price per ticket:</strong>
+    <span>${{ data.event.price || 0 }}</span>
+  </div>
+  <div class="d-flex justify-content-between">
+    <strong>Total Price:</strong>
+    <span>${{ (data.event.price || 0) * (ticketCount || 0) }}</span>
+  </div>
+</div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close class="btn btn-secondary">Cancel</button>
+  <button mat-flat-button color="primary" (click)="onBookEvent()" class="btn btn-primary">Book Now</button>
+</mat-dialog-actions>

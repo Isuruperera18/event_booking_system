@@ -1,0 +1,98 @@
+<div class="form-container">
+  <mat-card>
+    <mat-card-title>Create New Event</mat-card-title>
+    <mat-card-content>
+      <form [formGroup]="eventForm" (ngSubmit)="onSubmit()">
+        <!-- Title -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" required />
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" required></textarea>
+        </mat-form-field>
+
+        <!-- Date -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="date" required />
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
+        <!-- Time -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Time</mat-label>
+          <input matInput type="time" formControlName="time" required />
+        </mat-form-field>
+
+        <!-- Location -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Location</mat-label>
+          <input matInput formControlName="location" required />
+        </mat-form-field>
+
+        <!-- Image Upload -->
+        <div class="full-width">
+          <label for="imageInput">Select Image</label>
+          <input type="file" formControlName="imageURL" id="imageInput" accept="image/*" />
+        </div>
+
+        <!-- Image Preview -->
+        <div *ngIf="imagePreview" class="image-preview" style="margin: 10px 0;">
+          <img [src]="imagePreview" alt="Preview" style="max-width: 100%; height: auto;" />
+        </div>
+
+        <!-- Capacity -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Capacity</mat-label>
+          <input matInput type="number" formControlName="capacity" />
+        </mat-form-field>
+
+        <!-- Price -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Price</mat-label>
+          <input matInput type="number" formControlName="price" />
+        </mat-form-field>
+
+        <!-- Category -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            <mat-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- isVirtual -->
+        <mat-checkbox formControlName="isVirtual">Virtual Event?</mat-checkbox>
+
+        <!-- Virtual Link (conditional) -->
+        <mat-form-field *ngIf="eventForm.get('isVirtual')?.value" appearance="fill" class="full-width">
+          <mat-label>Virtual Link</mat-label>
+          <input matInput formControlName="virtualLink" />
+        </mat-form-field>
+
+        <!-- Status -->
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="Scheduled">Scheduled</mat-option>
+            <mat-option value="Cancelled">Cancelled</mat-option>
+            <mat-option value="Postponed">Postponed</mat-option>
+            <mat-option value="Completed">Completed</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Submit -->
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="eventForm.invalid">
+            Create Event
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

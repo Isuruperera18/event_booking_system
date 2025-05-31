@@ -1,0 +1,24 @@
+<div class="container py-4">
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="d-flex justify-content-center my-5">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <!-- No Events Message -->
+  <div *ngIf="!loading && events.length === 0" class="alert alert-warning text-center">
+    No events found.
+  </div>
+
+  <h1 class="mb-4">Events</h1>
+
+  <!-- Event Cards Grid -->
+  <div *ngIf="!loading && events.length > 0" class="row g-4">
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3" *ngFor="let event of events">
+      <app-event-card
+        [event]="event"
+        (cardClick)="goToDetails(event._id!)"
+        (book)="onBookEvent(event._id!)"
+      ></app-event-card>
+    </div>
+  </div>
+</div>
