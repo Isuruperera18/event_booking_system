@@ -161,18 +161,15 @@ exports.getBooking = async (req, res) => {
 
 exports.cancelBooking = async (req, res) => {
   try {
-    const cancelBooking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id);
 
-    if (!cancelBooking) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
     // Only allow owner or admin to cancel
     if (
-      cancelBooking.user.toString() !== req.user.id &&
-      req.user.role !== "Admin"
+      booking.user.toString() !== req.user.id
     ) {
       return res.status(403).json({
         success: false,
@@ -180,17 +177,18 @@ exports.cancelBooking = async (req, res) => {
       });
     }
 
-    // Delete booking
-    await Booking.findByIdAndDelete(req.params.id);
+    // Update booking status to cancelled
+    booking.status = "cancelled";
+    await booking.save();
 
-    // Remove user ID from event's attendees list
-    await Event.findByIdAndUpdate(cancelBooking.event, {
-      $pull: { attendees: cancelBooking.user },
+    // Optionally remove user from attendees list in the Event model
+    await Event.findByIdAndUpdate(booking.event, {
+      $pull: { attendees: booking.user },
     });
 
     res.status(200).json({
       success: true,
-      message: "Booking cancelled and attendee removed from event",
+      message: "Booking cancelled and status updated",
     });
   } catch (err) {
     console.error(err);

@@ -1,7 +1,7 @@
 // controllers/eventController.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Event = require("../models/Event");
-const Booking = require('../models/Booking');
+const Booking = require("../models/Booking");
 const axios = require("axios");
 const multer = require("multer");
 const fs = require("fs");
@@ -16,47 +16,45 @@ const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 // Middleware to handle single image upload with multer
 exports.uploadEventImage = upload.single("image");
 
-// @desc    Create new event with image upload to Imgbb
-// @route   POST /api/v1/events
-// @access  Private (Organizer or Admin)
 exports.createEvent = async (req, res, next) => {
-    try {
-        // 1. Upload to ImgBB
-        if(req.file){
-        const imageBase64 = req.file.buffer.toString('base64');
+  try {
+    // 1. Upload to ImgBB
+    if (req.file) {
+      const imageBase64 = req.file.buffer.toString("base64");
 
-        // ImgBB expects data as 'application/x-www-form-urlencoded'
-        // We can use URLSearchParams for this
-        const formData = new URLSearchParams();
-        formData.append('image', imageBase64);
-        // formData.append('name', req.file.originalname); // Optional: set a name for the image on ImgBB
+      // ImgBB expects data as 'application/x-www-form-urlencoded'
+      // We can use URLSearchParams for this
+      const formData = new URLSearchParams();
+      formData.append("image", imageBase64);
+      // formData.append('name', req.file.originalname); // Optional: set a name for the image on ImgBB
 
-        console.log('Uploading to ImgBB...');
-        const imgbbResponse = await axios.post(
-            `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            }
-        );
-
-        if (!imgbbResponse.data || !imgbbResponse.data.success) {
-            console.error('ImgBB Upload Error:', imgbbResponse.data);
-            return res.status(500).json({ message: 'Failed to upload image to ImgBB', error: imgbbResponse.data });
+      console.log("Uploading to ImgBB...");
+      const imgbbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
         }
+      );
 
-        const imgbbData = imgbbResponse.data.data;
-        const imageUrl = imgbbData.url; // Direct link to the image
-        console.log('ImgBB Upload successful:', imageUrl);
-
-        req.body.imageURL = imageUrl
+      if (!imgbbResponse.data || !imgbbResponse.data.success) {
+        console.error("ImgBB Upload Error:", imgbbResponse.data);
+        return res.status(500).json({
+          message: "Failed to upload image to ImgBB",
+          error: imgbbResponse.data,
+        });
       }
-      else{
 
-        req.body.imageURL = "https://i.ibb.co/Q7p33kKv/default.jpg";
-      }
+      const imgbbData = imgbbResponse.data.data;
+      const imageUrl = imgbbData.url; // Direct link to the image
+      console.log("ImgBB Upload successful:", imageUrl);
+
+      req.body.imageURL = imageUrl;
+    } else {
+      req.body.imageURL = "https://i.ibb.co/Q7p33kKv/default.jpg";
+    }
     req.body.organizer = req.user.id;
 
     const event = await Event.create(req.body);
@@ -81,7 +79,12 @@ exports.createEvent = async (req, res, next) => {
 
 exports.getEvents = async (req, res, next) => {
   try {
-    const events = await Event.find().populate("organizer", "name email");
+    const oneHourAgoNow = new Date(Date.now() - 60 * 60 * 1000);
+
+    const events = await Event.find({
+      status: { $nin: ["cancelled", "completed"] },
+      date: { $gte: oneHourAgoNow },
+    }).populate("organizer", "name email");
 
     const userId = req.user?.id || null;
 
@@ -90,10 +93,11 @@ exports.getEvents = async (req, res, next) => {
         // Calculate total booked tickets
         const bookingAgg = await Booking.aggregate([
           { $match: { event: new mongoose.Types.ObjectId(event._id) } },
-          { $group: { _id: null, totalTickets: { $sum: '$tickets' } } }
+          { $group: { _id: null, totalTickets: { $sum: "$tickets" } } },
         ]);
         const bookedCount = bookingAgg[0]?.totalTickets || 0;
-        const availableTickets = event.capacity > 0 ? event.capacity - bookedCount : Infinity;
+        const availableTickets =
+          event.capacity > 0 ? event.capacity - bookedCount : Infinity;
 
         let eventData = {
           ...event.toObject(),
@@ -103,14 +107,15 @@ exports.getEvents = async (req, res, next) => {
 
         // If logged in, fetch booking
         if (userId) {
-          console.log(`Checking booking for user ${userId} and event ${event._id}`);
           const userBooking = await Booking.findOne({
             event: event._id,
-            user: userId
-          }).select('_id');
+            user: userId,
+            status: "booked", // only consider booked status
+          })
+            .sort({ createdAt: -1 }) // get the latest one
+            .select("_id status"); // only return _id and status
 
-          console.log('Found booking:', userBooking);
-          eventData.bookingId = userBooking ? userBooking._id : null;
+          eventData.booking = userBooking || null;
         }
 
         return eventData;
@@ -120,7 +125,7 @@ exports.getEvents = async (req, res, next) => {
     res.status(200).json({
       success: true,
       count: eventsWithAvailability.length,
-      data: eventsWithAvailability
+      data: eventsWithAvailability,
     });
   } catch (err) {
     console.error(err);
@@ -128,72 +133,69 @@ exports.getEvents = async (req, res, next) => {
   }
 };
 
-
 exports.getEvent = async (req, res, next) => {
   try {
-    const event = await Event.findById(req.params.id).populate("organizer", "name email");
+    const userId = req.user?.id || null;
+
+    const event = await Event.findById(req.params.id).populate(
+      "organizer",
+      "name email"
+    );
     if (!event) {
       return res.status(404).json({
         success: false,
-        message: `Event not found with id of ${req.params.id}`
+        message: `Event not found with id of ${req.params.id}`,
       });
     }
 
     const bookingAgg = await Booking.aggregate([
-      { $match: { eventId: new mongoose.Types.ObjectId(event._id) } },
-      { $group: { _id: null, totalTickets: { $sum: '$tickets' } } }
+      { $match: { event: new mongoose.Types.ObjectId(event._id) } },
+      { $group: { _id: null, totalTickets: { $sum: "$tickets" } } },
     ]);
     const bookedCount = bookingAgg[0]?.totalTickets || 0;
-    const availableTickets = event.capacity > 0 ? event.capacity - bookedCount : Infinity;
+    const availableTickets =
+      event.capacity > 0 ? event.capacity - bookedCount : Infinity;
 
     const eventData = {
       ...event.toObject(),
-      availableTickets: availableTickets < 0 ? 0 : availableTickets
+      availableTickets: availableTickets < 0 ? 0 : availableTickets,
     };
 
-    // Add bookingId for current user if logged in
-    const userId = req.user?.id || null;
     if (userId) {
       const userBooking = await Booking.findOne({
-        eventId: event._id,
-        userId: userId
-      }).select('_id');
+        event: event._id,
+        user: userId,
+      }).select("_id, status");
 
-      eventData.bookingId = userBooking ? userBooking._id : null;
+      eventData.bookedTickets = bookedCount;
+      eventData.booking = userBooking ? userBooking : null;
     }
 
     res.status(200).json({
       success: true,
-      data: eventData
+      data: eventData,
     });
   } catch (err) {
     console.error(err);
     if (err.name === "CastError") {
       return res.status(404).json({
         success: false,
-        message: `Event not found with id of ${req.params.id}`
+        message: `Event not found with id of ${req.params.id}`,
       });
     }
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-
-
-// @desc    Update event
-// @route   PUT /api/v1/events/:id
-// @access  Private (Organizer of this event or Admin)
 exports.updateEvent = async (req, res, next) => {
   try {
     let event = await Event.findById(req.params.id);
 
     if (!event) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`,
+      });
     }
 
     // Make sure user is the event owner or an Admin
@@ -201,12 +203,10 @@ exports.updateEvent = async (req, res, next) => {
       event.organizer.toString() !== req.user.id &&
       req.user.role !== "Admin"
     ) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: `User ${req.user.id} is not authorized to update this event`,
-        });
+      return res.status(401).json({
+        success: false,
+        message: `User ${req.user.id} is not authorized to update this event`,
+      });
     }
 
     event = await Event.findByIdAndUpdate(req.params.id, req.body, {
@@ -222,31 +222,24 @@ exports.updateEvent = async (req, res, next) => {
       return res.status(400).json({ success: false, message: messages });
     }
     if (err.name === "CastError") {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`,
+      });
     }
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// @desc    Delete event
-// @route   DELETE /api/v1/events/:id
-// @access  Private (Organizer of this event or Admin)
 exports.deleteEvent = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id);
 
     if (!event) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`,
+      });
     }
 
     // Make sure user is the event owner or an Admin
@@ -254,12 +247,10 @@ exports.deleteEvent = async (req, res, next) => {
       event.organizer.toString() !== req.user.id &&
       req.user.role !== "Admin"
     ) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: `User ${req.user.id} is not authorized to delete this event`,
-        });
+      return res.status(401).json({
+        success: false,
+        message: `User ${req.user.id} is not authorized to delete this event`,
+      });
     }
 
     await event.deleteOne(); // Use deleteOne instead of remove for Mongoose v6+
@@ -268,12 +259,10 @@ exports.deleteEvent = async (req, res, next) => {
   } catch (err) {
     console.error(err);
     if (err.name === "CastError") {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Event not found with id of ${req.params.id}`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Event not found with id of ${req.params.id}`,
+      });
     }
     res.status(500).json({ success: false, message: "Server Error" });
   }

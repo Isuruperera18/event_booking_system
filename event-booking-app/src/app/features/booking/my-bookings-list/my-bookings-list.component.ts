@@ -12,7 +12,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   imports: [CommonModule, MatTableModule,
     MatProgressSpinnerModule,
     MatToolbarModule,
-    MatIconModule,],
+    MatIconModule,
+  ],
   templateUrl: './my-bookings-list.component.html',
   styleUrl: './my-bookings-list.component.scss'
 })
@@ -21,9 +22,9 @@ export class MyBookingsListComponent implements OnInit {
   loading = false;
   error = '';
 
-displayedColumns: string[] = ['title', 'date', 'tickets', 'bookedAt'];
+  displayedColumns: string[] = ['title', 'date', 'tickets', 'status'];
 
-  constructor(private bookingService: BookingService, private router: Router) {}
+  constructor(private bookingService: BookingService, private router: Router) { }
 
   ngOnInit(): void {
     this.loadBookings();

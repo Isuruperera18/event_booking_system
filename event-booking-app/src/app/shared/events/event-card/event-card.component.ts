@@ -14,6 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { BookingService } from '../../../core/services/booking.service';
 import { EventService } from '../../../core/services/event.service';
 import { Booking } from '../../../core/models/booking.model';
+import { CancelBookingDialogComponent } from '../../bookings/cancel-booking-dialog/cancel-booking-dialog.component';
 
 @Component({
   selector: 'app-event-card',
@@ -42,7 +43,6 @@ export class EventCardComponent implements OnInit {
     private tokenStorageService: TokenStorageService,
     private snackBar: MatSnackBar,
     private bookingService: BookingService,
-    private eventService: EventService,
   ) { }
 
   ngOnInit(): void {
@@ -73,26 +73,33 @@ export class EventCardComponent implements OnInit {
       if (result) {
         console.log(`User booked ${result} tickets.`);
         this.onBookEvent(result)
-        // Optional: Update available ticket count, show confirmation, etc.
-        this.book.emit();
       }
     });
   }
 
-  // In your component.ts
   isUserAttending(event: AppEvent): boolean {
     if (!event.attendees || !this.currentUserId) return false;
     return event.attendees.includes(this.currentUserId);
   }
 
+  openCancelDialog(): void {
+    const dialogRef = this.dialog.open(CancelBookingDialogComponent, {
+      width: '350px',
+      data: { eventTitle: this.event.title }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.cancelBooking(this.event);
+      }
+    });
+  }
+
   cancelBooking(event: AppEvent) {
-    this.bookingService.cancelBooking(event.bookingId!).subscribe({
+    this.bookingService.cancelBooking(event.booking?._id!).subscribe({
       next: () => {
         this.snackBar.open('Booking canceled successfully!', 'Close', { duration: 3000 });
-        // You might want to emit an event or update the event data here
-        // this.getEvent()
-        // this.cardClick.emit();  // for example, to refresh parent component data
-
+        this.book.emit();
       },
       error: (err) => {
         console.error('Error canceling booking:', err);
@@ -106,7 +113,7 @@ export class EventCardComponent implements OnInit {
       eventId: this.event._id!,
       tickets,
     }
-    console.log(`Booked ${booking} tickets.`);
+
     this.bookingService.createBooking(booking).subscribe({
       next: (createdEvent) => {
         this.loading = false;
@@ -120,19 +127,4 @@ export class EventCardComponent implements OnInit {
       }
     });
   }
-
-  //   getEvent() {
-  //   this.eventService.getEventById(this.event._id!).subscribe({
-  //     next: (currentEvent) => {
-  //               this.isUserAttending(currentEvent?.data)
-  //       this.snackBar.open('Booking get successfully!', 'Close', { duration: 3000 });
-  //       // You might want to emit an event or update the event data here
-  //       // this.cardClick.emit();  // for example, to refresh parent component data
-  //     },
-  //     error: (err) => {
-  //       console.error('Error canceling booking:', err);
-  //       this.snackBar.open('Failed to cancel booking. Please try again.', 'Close', { duration: 3000 });
-  //     }
-  //   });
-  // }
 }

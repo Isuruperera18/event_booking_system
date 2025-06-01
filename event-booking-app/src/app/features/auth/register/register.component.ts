@@ -14,8 +14,8 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports:[
-        CommonModule,
+  imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -33,7 +33,7 @@ export class RegisterComponent {
 
   constructor(private fb: FormBuilder,
     private authService: AuthService,
-      private snackBar: MatSnackBar,
+    private snackBar: MatSnackBar,
     private router: Router) {
     this.registerForm = this.fb.group({
       name: ['', [Validators.required]],
@@ -45,12 +45,12 @@ export class RegisterComponent {
   onSubmit() {
     if (this.registerForm.valid) {
       this.authService.register(this.registerForm.value).subscribe({
-      next: () => {
-        this.snackBar.open('Registered successfully!', 'Close', { duration: 3000 });
-        this.router.navigate(['/login'])
-      },
-      error: err => this.snackBar.open('Registration failed!', 'Close', { duration: 3000 }),
-    });
+        next: () => {
+          this.snackBar.open('Registered successfully!', 'Close', { duration: 3000 });
+          this.router.navigate(['/events'])
+        },
+        error: err => this.snackBar.open('Registration failed!', 'Close', { duration: 3000 }),
+      });
     }
   }
 }

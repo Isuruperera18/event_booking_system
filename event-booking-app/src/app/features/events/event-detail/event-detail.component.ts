@@ -14,6 +14,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { BookTicketDialogComponent } from '../book-ticket-dialog/book-ticket-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { TokenStorageService } from '../../../core/services/token-storage.service';
+import { BookingService } from '../../../core/services/booking.service';
+import { CancelBookingDialogComponent } from '../../../shared/bookings/cancel-booking-dialog/cancel-booking-dialog.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-event-details',
@@ -36,19 +40,34 @@ import { MatDialog } from '@angular/material/dialog';
 export class EventDetailsComponent implements OnInit {
   event: AppEvent | null = null;
   loading = true;
+  currentUserId = '';
+  id: string | null = '';
 
   constructor(
     private route: ActivatedRoute,
     private eventService: EventService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private tokenStorageService: TokenStorageService,
+    private bookingService: BookingService,
+    private snackBar: MatSnackBar,
   ) { }
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.eventService.getEventById(id).subscribe({
+    this.id = this.route.snapshot.paramMap.get('id');
+    const user = this.tokenStorageService.getUser();
+
+    if (user && user.id) {
+      this.currentUserId = user.id;
+    }
+
+    this.getEvent()
+  }
+
+  getEvent() {
+    if (this.id) {
+      this.eventService.getEventById(this.id).subscribe({
         next: (res) => {
-          this.event = res.data; // ✅ Extract AppEvent from response
+          this.event = res.data;
           this.loading = false;
         },
         error: () => this.loading = false
@@ -60,18 +79,49 @@ export class EventDetailsComponent implements OnInit {
 
   openBookingDialog(): void {
     if (!this.event) {
-      return; // Safeguard if event is not loaded
+      return;
     }
 
     const dialogRef = this.dialog.open(BookTicketDialogComponent, {
       width: '400px',
-      data: { event: this.event }  // pass event as data
+      data: { event: this.event }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(`User booked ${result} tickets.`);
-        // Optional: Update available ticket count, show confirmation, etc.
+        this.getEvent()
+      }
+    });
+  }
+
+  isUserAttending(): boolean {
+    if (!this.event?.attendees || !this.currentUserId) return false;
+    return this.event?.attendees.includes(this.currentUserId);
+  }
+
+  openCancelDialog(): void {
+    const dialogRef = this.dialog.open(CancelBookingDialogComponent, {
+      width: '350px',
+      data: { eventTitle: this.event?.title }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.cancelBooking();
+      }
+    });
+  }
+
+  cancelBooking() {
+    this.bookingService.cancelBooking(this.event?.booking?._id!).subscribe({
+      next: () => {
+        this.snackBar.open('Booking canceled successfully!', 'Close', { duration: 3000 });
+        this.getEvent();
+      },
+      error: (err) => {
+        console.error('Error canceling booking:', err);
+        this.snackBar.open('Failed to cancel booking. Please try again.', 'Close', { duration: 3000 });
       }
     });
   }

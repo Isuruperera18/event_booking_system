@@ -13,6 +13,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 
 @Component({
   selector: 'app-event-form',
@@ -28,7 +29,8 @@ import { HttpErrorResponse } from '@angular/common/http';
     MatNativeDateModule,
     MatSnackBarModule,
     MatSelectModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatTimepickerModule
   ],
   templateUrl: './event-form.component.html',
   styleUrls: ['./event-form.component.scss']
@@ -56,7 +58,7 @@ export class EventFormComponent implements OnInit {
       title: ['', Validators.required],
       description: ['', Validators.required],
       date: [null, Validators.required],
-      time: ['', Validators.required],
+      time: [null, Validators.required],
       location: ['', Validators.required],
       capacity: [null],
       price: [0],
@@ -102,7 +104,7 @@ export class EventFormComponent implements OnInit {
     if (this.eventForm.invalid || !this.selectedFile) {
       this.errorMessage = 'Please fill all required fields.';
       console.error('Form is invalid or no file selected.');
-      // Mark all fields as touched to show validation errors
+
       Object.values(this.eventForm.controls).forEach(control => {
         control.markAsTouched();
       });
@@ -113,11 +115,14 @@ export class EventFormComponent implements OnInit {
     this.uploadResponse = null;
     this.errorMessage = null;
 
+    const eventDateTime = this.combineDateAndTime();
+
     const formData = new FormData();
+
     formData.append('imageFile', this.selectedFile, this.selectedFile.name);
     formData.append('title', this.eventForm.get('title')?.value);
     formData.append('description', this.eventForm.get('description')?.value);
-    formData.append('date', this.eventForm.get('date')?.value);
+    formData.append('date', eventDateTime!);
     formData.append('time', this.eventForm.get('time')?.value);
     formData.append('location', this.eventForm.get('location')?.value);
     formData.append('capacity', this.eventForm.get('capacity')?.value);
@@ -138,7 +143,6 @@ export class EventFormComponent implements OnInit {
           this.snackBar.open('Event created successfully!', 'Close', { duration: 3000 });
         },
         error: (error: HttpErrorResponse) => {
-          // console.error('Upload failed', error);
           this.errorMessage = error.error?.message || error.message || 'An unknown error occurred.';
           if (error.status === 0) {
             this.errorMessage = 'Could not connect to the server. Is it running?';
@@ -147,4 +151,22 @@ export class EventFormComponent implements OnInit {
         }
       });
   }
+
+  combineDateAndTime() {
+    const date: Date = this.eventForm.get('date')?.value;
+    const time = this.eventForm.get('time')?.value;
+
+    if (!date || !time) return null;
+
+    const [hours, minutes] = time.split(':').map(Number);
+
+    const combined = new Date(date);
+    combined.setHours(hours);
+    combined.setMinutes(minutes);
+    combined.setSeconds(0);
+    combined.setMilliseconds(0);
+
+    return combined.toISOString();
+  }
+
 }

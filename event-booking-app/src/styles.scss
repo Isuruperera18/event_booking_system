@@ -2,4 +2,8 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-.p-2 {padding: 20px;}
+.rounded-button {
+  border-radius: 15px !important; 
+  padding: 6px 16px;
+  min-width: 100px;
+}

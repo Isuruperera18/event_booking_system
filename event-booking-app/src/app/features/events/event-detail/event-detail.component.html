@@ -1,62 +1,109 @@
-<div class="container mat-typography">
-<a mat-button color="primary" class="mb-4" routerLink="/events">← Back to Events</a>
+<div class="container py-4">
+  <!-- Back Button -->
+  <a mat-stroked-button color="primary" class="mb-4 d-inline-block px-4 py-2 border rounded" routerLink="/events">
+    ← Back to Events
+  </a>
 
   <!-- Event Image -->
-  <mat-card class="event-image-card">
-    <img mat-card-image [src]="event?.imageURL" alt="Event Banner">
+  <mat-card class="mb-4 event-image-card position-relative p-0 border border-secondary">
+    <img mat-card-image [src]="event?.imageURL" alt="Event Banner" class="img-fluid rounded" />
+
+    <!-- Chips container at top right -->
+    <div class="position-absolute top-0 end-0 m-3 d-flex gap-2">
+      <span class="badge bg-primary me-2 px-3 py-2 fs-6">{{ event?.category }}</span>
+
+      <span class="badge px-3 py-2 fs-6" [ngClass]="{
+    'bg-primary': event?.status === 'Scheduled',
+    'bg-danger': event?.status === 'Cancelled',
+    'bg-warning text-dark': event?.status === 'Postponed',
+    'bg-success': event?.status === 'Completed'
+  }">
+        {{ event?.status }}
+      </span>
+
+    </div>
   </mat-card>
 
-  <div class="content-grid">
-    <!-- Left: Event Info -->
-    <div class="left-content">
-      <div class="tags">
-        <mat-chip color="primary" selected>{{event?.category}}</mat-chip>
-        <mat-chip color="accent" selected>{{event?.status}}</mat-chip>
-      </div>
+  <div class="row">
+    <!-- Left Column: Event Info -->
+    <div class="col-lg-8">
+      <!-- Title & Description -->
 
-      <h1 class="mat-headline">{{event?.title}}</h1>
-      <p class="mat-body-1 mb-4">
-        {{event?.description}}
-      </p>
-
-      <mat-card class="event-details-card">
+      <!-- Event Details Card -->
+      <mat-card class="p-3 border border-secondary">
         <mat-card-title>Event Details</mat-card-title>
         <mat-card-content>
-          <div class="details-grid">
-            <div>
-              <mat-icon>event</mat-icon>
-              <span>Date: {{event?.date | date}}</span>
+          <h1 class="display-5 mb-2">{{ event?.title }}</h1>
+          <p class="mb-4">{{ event?.description }}</p>
+          <div class="row g-3 mt-2">
+            <div class="col-md-6 d-flex align-items-center">
+              <mat-icon class="me-2">event</mat-icon>
+              <span>{{ event?.date | date: 'fullDate' }}</span>
             </div>
-            <div>
-              <mat-icon>schedule</mat-icon>
-              <span>Time: {{event?.time}}</span>
+            <div class="col-md-6 d-flex align-items-center">
+              <mat-icon class="me-2">schedule</mat-icon>
+              <span>{{ event?.date | date: 'hh:mm a' }}</span>
             </div>
-            <div>
-              <mat-icon>place</mat-icon>
-              <span>Location: {{event?.location}}</span>
+            <div class="col-md-6 d-flex align-items-center">
+              <mat-icon class="me-2">place</mat-icon>
+              <span>{{ event?.location }}</span>
             </div>
-            <div>
-              <mat-icon>groups</mat-icon>
-              <span>Capacity: {{event?.capacity}} people</span>
+            <div class="col-md-6 d-flex align-items-center">
+              <mat-icon class="me-2">groups</mat-icon>
+              <span>{{ event?.capacity }} people</span>
             </div>
           </div>
         </mat-card-content>
-    </mat-card>
-    <h3 class="p-2">Organized by {{event?.organizer?.name}}</h3>
+      </mat-card>
+
+      <!-- Organizer Info -->
+      <h5 class="text-muted py-3">👤 Organized by <strong>{{ event?.organizer?.name }}</strong></h5>
     </div>
 
-    <!-- Right: Booking Section -->
-    <div class="booking-card">
-      <mat-card>
-        <mat-card-title class="p-2">Book Your Tickets</mat-card-title>
+    <!-- Right Column: Booking Section -->
+    <div class="col-lg-4">
+      <mat-card class="shadow-sm p-3 border  border-secondary">
+        <mat-card-title class="pb-2">Book Your Tickets</mat-card-title>
         <mat-card-content>
-          <div class="price">
-            <span class="amount">{{ event?.price || 0 }}</span> <small>per ticket</small>
-          </div>
-          <p class="p-2">Available tickets: <strong>{{event?.capacity}}</strong></p>
+
+          <!-- If user already booked -->
+          <ng-container *ngIf="isUserAttending(); else bookNowBlock">
+            <p class="mt-2 text-success">✅ You have already booked this event.</p>
+            <p>🎟️ Tickets Booked: <strong>{{ event?.bookedTickets || 0 }}</strong></p>
+            <p>
+              💰 Total Amount:
+              <strong> {{(event?.price ?? 0 ) | currency}} x {{event?.bookedTickets ?? 0}} = {{
+                (event?.bookedTickets ?? 0) * (event?.price ?? 0) | currency }}</strong>
+            </p>
+            <p>📌 Status: <strong>{{ event?.status }}</strong></p>
+          </ng-container>
+
+          <!-- If user has not booked yet -->
+          <ng-template #bookNowBlock>
+            <div class="price mt-3 mb-2">
+              <span class="h4 fw-bold">{{ event?.price | currency }}</span>
+              <small class="text-muted">per ticket</small>
+            </div>
+            <p>🎫 Available Tickets: <strong>{{ event?.availableTickets }}</strong></p>
+            <p>📌 Status: <strong>{{ event?.status }}</strong></p>
+          </ng-template>
         </mat-card-content>
-        <mat-card-actions>
-          <button mat-flat-button color="primary" class="full-width" (click)="openBookingDialog()">Book Now</button>
+
+        <!-- Action Buttons -->
+        <mat-card-actions class="mt-3 d-flex justify-content-end">
+          <ng-container *ngIf="!isUserAttending(); else cancelBtn">
+            <button mat-raised-button color="primary" class="rounded-pill"
+              (click)="openBookingDialog(); $event.stopPropagation()">
+              Book Now
+            </button>
+          </ng-container>
+
+          <ng-template #cancelBtn>
+            <button mat-raised-button color="warn" class="rounded-pill"
+              (click)="openCancelDialog(); $event.stopPropagation()">
+              Cancel Booking
+            </button>
+          </ng-template>
         </mat-card-actions>
       </mat-card>
     </div>

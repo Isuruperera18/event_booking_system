@@ -16,7 +16,7 @@ router.route('/')
     .post(protect, authorize('Organizer', 'Admin'),upload.single('imageFile'), createEvent); // Only Organizers or Admins can create
 
 router.route('/:id')
-    .get(getEvent) // Public
+    .get(optionalProtect, getEvent) // Public
     .put(protect, authorize('Organizer', 'Admin'), updateEvent) // Only Organizer of the event or Admin can update
     .delete(protect, authorize('Organizer', 'Admin'), deleteEvent); // Only Organizer of the event or Admin can delete
 

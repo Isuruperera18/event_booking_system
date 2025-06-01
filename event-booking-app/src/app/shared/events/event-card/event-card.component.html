@@ -12,7 +12,7 @@
 
         <div class="info">
             <mat-icon>event</mat-icon>
-            <span>{{ event.date | date: 'mediumDate' }} at {{ event.time }}</span>
+            <span>{{ event.date | date: 'MMM d, y, h:mm a' }}</span>
         </div>
 
         <div class="info" *ngIf="event.isVirtual; else locationBlock">
@@ -28,7 +28,7 @@
 
         <div class="info" *ngIf="event.capacity">
             <mat-icon>group</mat-icon>
-            <span>{{ event.bookedCount  }} / {{ event.capacity }} attending</span>
+            <span>{{ event.bookedCount }} / {{ event.capacity }} attending</span>
         </div>
 
         <div class="info">
@@ -37,18 +37,21 @@
         </div>
     </mat-card-content>
 
-    <!-- Footer always visible -->
-    <mat-card-actions class="action-buttons d-flex justify-content-end p-3 pt-2">
-        <ng-container *ngIf="!isUserAttending(event); else cancelBtn">
-            <button mat-raised-button color="primary" (click)="openBookingDialog(event); $event.stopPropagation()">
-                Book Now
-            </button>
-        </ng-container>
 
-        <ng-template #cancelBtn>
-            <button mat-raised-button color="warn" (click)="cancelBooking(event); $event.stopPropagation()">
-                Cancel Booking
-            </button>
-        </ng-template>
-    </mat-card-actions>
+    <mat-card-actions class="action-buttons d-flex justify-content-end p-3 pt-2">
+  <ng-container *ngIf="!isUserAttending(event); else cancelBtn">
+    <button mat-raised-button color="primary" class="rounded-button"
+      (click)="openBookingDialog(event); $event.stopPropagation()">
+      Book Now
+    </button>
+  </ng-container>
+
+  <ng-template #cancelBtn>
+    <button mat-raised-button color="warn" class="rounded-button"
+      (click)="openCancelDialog(); $event.stopPropagation()">
+      Cancel Booking
+    </button>
+  </ng-template>
+</mat-card-actions>
+
 </mat-card>
